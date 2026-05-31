@@ -40,6 +40,27 @@ class IntelligentPlayer(BasePlayer):
         if not legal_moves:
             return Move(0)  # Should not happen in normal play
             
+        # 1. First pass - check for immediate win
+        for move in legal_moves:
+            board.apply_move(move.col, my_id)
+            is_terminal, winner = board.terminal_status()
+            board.undo_move(move.col)
+            if is_terminal and winner == my_id:
+                return move
+                
+        # 2. Second pass - check for immediate block
+        block_move = None
+        for move in legal_moves:
+            board.apply_move(move.col, opp_id)
+            is_terminal, winner = board.terminal_status()
+            board.undo_move(move.col)
+            if is_terminal and winner == opp_id:
+                block_move = move
+                break
+                
+        if block_move is not None:
+            return block_move
+            
         best_overall_move = legal_moves[0]
         
         for depth in range(1, 11):
