@@ -1,4 +1,3 @@
-import random
 import time
 from player import BasePlayer
 from board import Board, Move
@@ -88,6 +87,85 @@ class IntelligentPlayer(BasePlayer):
         moves = board.legal_moves()
         return sorted(moves, key=lambda m: abs(m.col - center))
 
+    def score_window(self, window: list[int], my_id: int, opp_id: int) -> float:
+        """
+        Calculates a heuristic score for a window of cells.
+        
+        Args:
+            window (list[int]): A list of cell values.
+            my_id (int): Player's ID.
+            opp_id (int): Opponent's ID.
+            
+        Returns:
+            float: The heuristic score for the window.
+        """
+        score = 0.0
+        my_count = window.count(my_id)
+        opp_count = window.count(opp_id)
+        empty_count = window.count(0)
+        
+        if my_count == 5:
+            score += 1000000
+        elif my_count == 4 and empty_count == 1:
+            score += 500
+        elif my_count == 3 and empty_count == 2:
+            score += 100
+        elif my_count == 2 and empty_count == 3:
+            score += 10
+            
+        if opp_count == 4 and empty_count == 1 and my_count == 0:
+            score -= 800
+        elif opp_count == 3 and empty_count == 2 and my_count == 0:
+            score -= 150
+            
+        return score
+
+    def score_board(self, board: Board, my_id: int, opp_id: int) -> float:
+        """
+        Calculates the full board's heuristic score.
+        
+        Args:
+            board (Board): The game board.
+            my_id (int): Player's ID.
+            opp_id (int): Opponent's ID.
+            
+        Returns:
+            float: Total heuristic score.
+        """
+        score = 0.0
+        
+        # Center column bonus
+        center_col = board.W // 2
+        center_count = sum(1 for r in range(board.H) if board.grid[r][center_col] == my_id)
+        score += center_count * 3
+        
+        # Horizontal scoring
+        for r in range(board.H):
+            for c in range(board.W - board.K + 1):
+                window = board.grid[r][c:c+board.K]
+                score += self.score_window(window, my_id, opp_id)
+                
+        # Vertical scoring
+        for c in range(board.W):
+            col_array = [board.grid[r][c] for r in range(board.H)]
+            for r in range(board.H - board.K + 1):
+                window = col_array[r:r+board.K]
+                score += self.score_window(window, my_id, opp_id)
+                
+        # Positive diagonal scoring (top-left to bottom-right)
+        for r in range(board.H - board.K + 1):
+            for c in range(board.W - board.K + 1):
+                window = [board.grid[r+i][c+i] for i in range(board.K)]
+                score += self.score_window(window, my_id, opp_id)
+                
+        # Negative diagonal scoring (bottom-left to top-right)
+        for r in range(board.K - 1, board.H):
+            for c in range(board.W - board.K + 1):
+                window = [board.grid[r-i][c+i] for i in range(board.K)]
+                score += self.score_window(window, my_id, opp_id)
+                
+        return score
+
     def evaluate(self, board: Board, my_id: int, opp_id: int) -> float:
         """
         Evaluates the current board state and returns a score.
@@ -98,9 +176,9 @@ class IntelligentPlayer(BasePlayer):
             opp_id (int): ID of the minimizing player.
             
         Returns:
-            float: The evaluation score (0 for now).
+            float: The evaluation score.
         """
-        return 0.0
+        return self.score_board(board, my_id, opp_id)
 
     def minimax(self, board: Board, depth: int, alpha: float, beta: float, maximizing_player: bool, my_id: int, opp_id: int, start_time: float, time_limit: float):
         """
@@ -127,9 +205,9 @@ class IntelligentPlayer(BasePlayer):
         
         if is_terminal:
             if winner == my_id:
-                return 100000
+                return 100000 + depth
             elif winner == opp_id:
-                return -100000
+                return -100000 - depth
             else:
                 return 0
                 
