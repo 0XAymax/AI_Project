@@ -3,21 +3,9 @@ from player import BasePlayer
 from board import Board, Move
 
 class IntelligentPlayer(BasePlayer):
-    """
-    Intelligent Connect-5 agent using Minimax with Alpha-Beta pruning.
-    Currently acts as a random player placeholder.
-    """
-    
     TIME_LIMIT = 0.9  # seconds (safe margin below the 1s hard limit)
 
     def __init__(self, player_id: int, name: str = "Intelligent"):
-        """
-        Initializes the IntelligentPlayer.
-        
-        Args:
-            player_id (int): The ID of the player (1 or 2).
-            name (str): The name of the player.
-        """
         super().__init__(player_id, name)
         
     def choose_move(self, board: Board) -> Move:
